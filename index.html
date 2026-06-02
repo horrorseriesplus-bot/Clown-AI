@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S1ST3M4_C0RRUPT0_V5</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #020202;
+            color: #ff1a1a;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* CAPA DE OSCURIDAD (Electrochoques / Desmayos / Sangre) */
+        #dark-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 99995;
+            transition: opacity 0.05s ease;
+        }
+
+        /* CAPA DE SANGRE TOTAL */
+        #blood-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 99997;
+            opacity: 0;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='15' cy='12' r='8' fill='%23800000' opacity='0.7'/><circle cx='85' cy='75' r='14' fill='%23660000' opacity='0.8'/><path d='M 0,0 Q 20,50 30,90 L 40,100 L 0,100 Z' fill='%23500000' opacity='0.6'/><path d='M 100,0 Q 80,40 65,85 L 50,100 L 100,100 Z' fill='%23400000' opacity='0.6'/><circle cx='45' cy='30' r='4' fill='%23990000'/><circle cx='70' cy='45' r='6' fill='%23850000'/></svg>");
+            transition: opacity 0.3s ease, background-color 0.5s ease;
+        }
+
+        /* CAPA DE GRIETAS ABSOLUTAS (Encima de todo) */
+        #crack-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-size: cover; background-position: center;
+            pointer-events: none; 
+            z-index: 99999; 
+            opacity: 0;
+            transition: opacity 0.1s ease;
+        }
+
+        #shock-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 99994; opacity: 0;
+            background-color: rgba(0, 183, 255, 0.25);
+        }
+
+        /* INTERFAZ DE LLAMADA / OFERTAS EN PANTALLA COMPLETA */
+        #fullscreen-call {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle, #1a0000 0%, #050505 100%);
+            z-index: 99990;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(-100vh);
+            transition: transform 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+        #fullscreen-call.active { transform: translateY(0); }
+        .call-avatar { font-size: 110px; animation: ringPulse 0.5s infinite alternate; margin-bottom: 20px; }
+        .call-title { font-size: 24px; color: #fff; font-weight: bold; margin-bottom: 40px; text-shadow: 0 0 10px red; text-align: center; padding: 0 20px; }
+        .call-buttons { display: flex; gap: 30px; width: 100%; max-width: 320px; justify-content: center; }
+        .c-btn { flex: 1; padding: 18px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-family: monospace; }
+        .btn-accept { background-color: #00cc44; color: white; box-shadow: 0 0 15px #00cc44; }
+        .btn-reject { background-color: #cc0000; color: white; box-shadow: 0 0 15px #cc0000; }
+
+        /* Contenedor de la Bomba */
+        #bomb-container {
+            position: fixed;
+            top: 45%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 110px; z-index: 99980;
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            text-align: center;
+        }
+        #bomb-timer {
+            font-size: 26px; color: #fff; font-weight: bold;
+            background: #000; padding: 5px 12px; border-radius: 5px;
+            border: 2px solid red; margin-top: 5px; box-shadow: 0 0 15px red;
+        }
+        .bomb-active { transform: translate(-50%, -50%) scale(1.4) !important; animation: blinkBomb 0.2s infinite alternate; }
+
+        /* Escenario del Payaso */
+        #clown-stage {
+            width: 100%; max-width: 440px; height: 160px;
+            display: flex; justify-content: center; align-items: center;
+            position: relative; border-radius: 12px; border: 2px solid #400;
+            background: radial-gradient(circle, #2a0000 0%, #020202 85%); margin-bottom: 8px;
+            z-index: 5;
+        }
+        #clown-face { font-size: 85px; transition: all 0.1s ease; user-select: none; z-index: 6; }
+        #clown-weapon { position: absolute; font-size: 65px; right: 15%; bottom: 20px; transform: scale(0); transition: transform 0.2s ease; z-index: 7; }
+        #clown-weapon.show { transform: scale(1.2); }
+
+        /* Contenedor del Chat */
+        #chat-container { 
+            width: 100%; max-width: 440px; height: calc(100vh - 220px); 
+            border: 2px solid #500; background-color: #060606; 
+            display: flex; flex-direction: column; border-radius: 8px; 
+            z-index: 20; position: relative;
+        }
+        #chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 85%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .user-msg { background-color: #1a1a1a; color: #ffffff; align-self: flex-end; border: 1px solid #333; }
+        .clown-msg { background-color: #120000; color: #ff5555; align-self: flex-start; border-left: 4px solid #b30000; }
+        .clown-msg.furious { background-color: #550000; color: #fff; font-size: 15px; text-shadow: 0 0 6px #ff0000; border: 1px solid #ff0000; animation: shakeMsg 0.1s infinite; }
+
+        #input-area { display: flex; border-top: 2px solid #300; background: #000; padding: 8px; z-index: 25; }
+        #user-input { flex: 1; background: #0d0d0d; border: 1px solid #4a0000; color: #fff; padding: 12px; font-size: 15px; outline: none; border-radius: 4px; }
+        #send-btn { background: #700; color: #fff; border: none; padding: 0 18px; margin-left: 8px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+
+        /* Animaciones */
+        .psycho { animation: spin 0.02s infinite linear; filter: drop-shadow(0 0 35px #ff0000) !important; }
+        .glitch { animation: twitch 0.05s infinite alternate; filter: drop-shadow(0 0 25px #ff7700) !important; }
+        .electro { animation: shockAnim 0.05s infinite; filter: invert(1) sepia(1) saturate(5) hue-rotate(175deg) !important; }
+
+        @keyframes ringPulse { 0% { transform: scale(1); filter: drop-shadow(0 0 5px red); } 100% { transform: scale(1.15); filter: drop-shadow(0 0 30px red); } }
+        @keyframes spin { 0% { transform: scale(1.3) rotate(-12deg); } 100% { transform: scale(1.3) rotate(12deg); } }
+        @keyframes twitch { 0% { transform: translate(3px, 2px) scale(1.1); } 100% { transform: translate(-3px, -2px) scale(1.1); } }
+        @keyframes shockAnim { 0% { opacity: 0.8; } 100% { opacity: 0.3; } }
+        @keyframes blinkBomb { 0% { filter: drop-shadow(0 0 10px red); } 100% { filter: drop-shadow(0 0 50px red); } }
+        @keyframes shakeMsg { 0% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
+    </style>
+</head>
+<body>
+
+    <div id="dark-overlay"></div>
+    <div id="blood-overlay"></div>
+    <div id="crack-overlay"></div>
+    <div id="shock-overlay"></div>
+
+    <div id="fullscreen-call">
+        <div class="call-avatar" id="call-icon">🤡📞</div>
+        <div class="call-title" id="call-text">EL PAYASO ASESINO TE ESTÁ LLAMANDO...</div>
+        <div class="call-buttons">
+            <button class="c-btn btn-accept" onclick="answerCall()">Aceptar</button>
+            <button class="c-btn btn-reject" onclick="rejectCall()">Rechazar</button>
+        </div>
+    </div>
+
+    <div id="bomb-container">
+        <span>💣</span>
+        <div id="bomb-timer">03</div>
+    </div>
+
+    <div id="clown-stage">
+        <div id="clown-face">🤡</div>
+        <div id="clown-weapon">🔫</div>
+    </div>
+    
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Comandos: /help o escribe..." autocomplete="off">
+            <button id="send-btn">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const clownFace = document.getElementById('clown-face');
+        const clownWeapon = document.getElementById('clown-weapon');
+        const crackOverlay = document.getElementById('crack-overlay');
+        const shockOverlay = document.getElementById('shock-overlay');
+        const bloodOverlay = document.getElementById('blood-overlay');
+        const darkOverlay = document.getElementById('dark-overlay');
+        const fullscreenCall = document.getElementById('fullscreen-call');
+        const callIcon = document.getElementById('call-icon');
+        const callText = document.getElementById('call-text');
+        const bombContainer = document.getElementById('bomb-container');
+        const bombTimerText = document.getElementById('bomb-timer');
+
+        // TEXTURAS SVG TOTALMENTE DIFERENCIADAS
+        const crackTextures = {
+            bullet: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500' viewBox='0 0 100 100'><circle cx='50' cy='50' r='4' fill='black'/><path d='M50 50 L35 15 L5 20 M35 15 L45 2 M50 50 L80 30 L98 35 M80 30 L85 5 M50 50 L65 85 L90 95 M65 85 L48 98 M50 50 L15 75 L2 90' stroke='white' stroke-width='1.8' fill='none'/></svg>\")",
+            knife: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500' viewBox='0 0 100 100'><path d='M10 10 L90 90 M90 10 L10 90 M50 0 L50 100 M0 50 L100 50 M15 45 L85 55 M55 15 L45 85' stroke='white' stroke-width='2' fill='none' stroke-linecap='square'/></svg>\")",
+            bomb: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='500' viewBox='0 0 100 100'><circle cx='50' cy='50' r='12' fill='none' stroke='white' stroke-width='3'/><circle cx='50' cy='50' r='32' fill='none' stroke='white' stroke-width='2' stroke-dasharray='6,4'/><circle cx='50' cy='50' r='46' fill='none' stroke='white' stroke-width='1.2'/><path d='M50 12 L50 2 M50 88 L50 98 M12 50 L2 50 M88 50 L98 50 M23 23 L10 10 M77 77 L90 90 M23 77 L10 90 M77 23 L90 10' stroke='white' stroke-width='1.5' fill='none'/></svg>\")"
+        };
+
+        let userData = { name: "", lastInput: "", repeatCount: 0 };
+        let clownState = { mood: "neutral", patience: 5, vibrationInterval: null, isDead: false };
+
+        appendMessage("clown", "Vaya, vaya... Un nuevo juguete entra al servidor. Antes de empezar... dime tu maldito nombre. Necesito saber qué escribir en tu panel.", "neutral");
+
+        sendBtn.addEventListener('click', processMessage);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') processMessage(); });
+
+        function processMessage() {
+            if (clownState.isDead) return;
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            appendMessage("user", text);
+            userInput.value = '';
+
+            if (text.startsWith("/")) {
+                executeCommand(text.toLowerCase());
+                return;
+            }
+
+            // Cansancio por repetición
+            if (text.toLowerCase() === userData.lastInput) {
+                userData.repeatCount++;
+                if (userData.repeatCount >= 2) {
+                    executeRepetitionAttack(text.toLowerCase());
+                    return;
+                }
+            } else {
+                userData.repeatCount = 0;
+                userData.lastInput = text.toLowerCase();
+            }
+
+            setTimeout(() => aiLogic(text), 400);
+        }
+
+        function appendMessage(sender, text, moodClass = "") {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg', sender === 'user' ? 'user-msg' : 'clown-msg');
+            if (sender === 'clown' && (moodClass === 'furioso' || moodClass === 'psicopata')) msgDiv.classList.add('furious');
+            msgDiv.innerText = text;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function startVibration(pattern) {
+            if ('vibrate' in navigator) {
+                clearInterval(clownState.vibrationInterval);
+                clownState.vibrationInterval = setInterval(() => navigator.vibrate(pattern), 800);
+            }
+        }
+
+        function stopAllEffects() {
+            clearInterval(clownState.vibrationInterval);
+            if ('vibrate' in navigator) navigator.vibrate(0);
+            clownWeapon.classList.remove('show');
+            shockOverlay.style.opacity = "0";
+            bloodOverlay.style.opacity = "0";
+            bloodOverlay.style.backgroundColor = "transparent";
+            darkOverlay.style.opacity = "0";
+            document.body.classList.remove('electro');
+        }
+
+        // --- INTERPRETE DE COMANDOS ---
+        function executeCommand(cmd) {
+            const cleanCmd = cmd.trim();
+            if (clownState.isDead && cleanCmd !== "/clear") return;
+
+            if (cleanCmd === "/shoot") { executeShoot(); } 
+            else if (cleanCmd === "/knife") { executeKnifeAttack(); } 
+            else if (cleanCmd === "/electro") { executeElectroshock(); } 
+            else if (cleanCmd === "/bomb") { executeBombAttack(); }
+            else if (cleanCmd === "/call") { triggerFullscreenCall(); }
+            else if (cleanCmd === "/beer") { triggerBeerOffer(); }
+            else if (cleanCmd === "/killknife") { executeFatality("knife"); }
+            else if (cleanCmd === "/killshoot") { executeFatality("shoot"); }
+            else if (cleanCmd === "/killbomb") { executeFatality("bomb"); }
+            else if (cleanCmd === "/rage") {
+                clownState.patience = -10;
+                clownFace.innerText = "👺";
+                clownFace.className = "psycho";
+                startVibration([500, 100]);
+                appendMessage("clown", "¡MODO DE FURIA TOTAL ACTIVADO POR COMANDO!", "furioso");
+            }
+            else if (cleanCmd === "/clear") {
+                clownState.isDead = false;
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                crackOverlay.style.opacity = "0";
+                stopAllEffects();
+                clownFace.innerText = "🤡";
+                clownFace.className = "";
+                appendMessage("clown", "Sistemas restaurados con éxito.", "neutral");
+            }
+            else if (cleanCmd === "/help") {
+                appendMessage("clown", "--- COMANDOS DE ACCIÓN ---\n/call - Llamada sorpresa\n/beer - Cerveza trampa\n/shoot - Tiro directo\n/knife - Corte de cuchillo\n/electro - Electrochoque\n/bomb - Bomba ordinaria\n/killknife - Fatality de cuchillo\n/killshoot - Fatality de pistola\n/killbomb - Fatality bomba sangrienta\n/clear - Revivir e interfaz limpia", "neutral");
+            }
+        }
+
+        // --- SISTEMA DE LLAMADA SORPRESA ---
+        function triggerFullscreenCall() {
+            stopAllEffects();
+            callIcon.innerText = "🤡📞";
+            if(userData.name) callText.innerText = `¡${userData.name.toUpperCase()}, EL PAYASO TE ESTÁ LLAMANDO!`;
+            else callText.innerText = "EL PAYASO ASESINO TE ESTÁ LLAMANDO...";
+            
+            restoreCallButtons();
+            fullscreenCall.classList.add('active');
+            startVibration([400, 200, 400, 200]);
+        }
+
+        function answerCall() {
+            fullscreenCall.classList.remove('active');
+            stopAllEffects();
+            setTimeout(() => {
+                executeShoot();
+                appendMessage("clown", "¡JAJAJAJAJA! ¡Caíste redondo en mi trampa! ¡Te metí un tiro en la cara por confiar en mí!", "psicopata");
+            }, 300);
+        }
+
+        function rejectCall() {
+            fullscreenCall.classList.remove('active');
+            stopAllEffects();
+            clownFace.innerText = "😒";
+            appendMessage("clown", "Mmh... esquivaste mi llamada. Qué cobarde eres. Te salvaste por esta vez.", "neutral");
+        }
+
+        // --- ATAQUES INDIVIDUALES ---
+        function executeShoot() {
+            stopAllEffects();
+            clownWeapon.innerText = "🔫";
+            clownWeapon.classList.add('show');
+            clownFace.innerText = "👺";
+            clownFace.className = "psycho";
+            startVibration([1000, 100]);
+            setTimeout(() => {
+                crackOverlay.style.backgroundImage = crackTextures.bullet;
+                crackOverlay.style.opacity = "1";
+                appendMessage("clown", "¡¡¡PUM!!! 🔫 Impacto de bala limpio directo en el centro.", "furioso");
+            }, 400);
+        }
+
+        function executeKnifeAttack() {
+            stopAllEffects();
+            clownWeapon.innerText = "🔪";
+            clownWeapon.classList.add('show');
+            clownFace.innerText = "👹";
+            clownFace.className = "glitch";
+            startVibration([500, 100]);
+            setTimeout(() => {
+                crackOverlay.style.backgroundImage = crackTextures.knife;
+                crackOverlay.style.opacity = "1";
+                appendMessage("clown", "¡ZAS! 🔪 Grietas de cortes cruzados limpios sobre toda la pantalla.", "furioso");
+            }, 400);
+        }
+
+        function executeElectroshock() {
+            stopAllEffects();
+            clownFace.innerText = "⚡🤪";
+            document.body.classList.add('electro');
+            shockOverlay.style.opacity = "1";
+            startVibration([50, 50]);
+
+            let blinks = 0;
+            let darkBlink = setInterval(() => {
+                darkOverlay.style.opacity = Math.random() > 0.5 ? "0.7" : "0.2";
+                blinks++;
+                if(blinks > 12) {
+                    clearInterval(darkBlink);
+                    stopAllEffects();
+                    appendMessage("clown", "¡⚡ BZZZZZZT! La descarga afectó tu visión, ¿viste cómo se oscureció todo?", "furioso");
+                }
+            }, 80);
+        }
+
+        function executeBombAttack() {
+            stopAllEffects();
+            clownFace.innerText = "😈";
+            clownFace.className = "psycho";
+            bombContainer.classList.add('bomb-active');
+            let timeLeft = 3;
+            bombTimerText.innerText = "0" + timeLeft;
+            startVibration([200, 200]);
+
+            let countdown = setInterval(() => {
+                timeLeft--;
+                if (timeLeft >= 0) bombTimerText.innerText = "0" + timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    bombContainer.classList.remove('bomb-active');
+                    stopAllEffects();
+                    if ('vibrate' in navigator) navigator.vibrate([1500]);
+                    crackOverlay.style.backgroundImage = crackTextures.bomb;
+                    crackOverlay.style.opacity = "1";
+                    appendMessage("clown", "¡¡¡BOOOOOOM!!! 💥 ¡La bomba expansiva destrozó la interfaz de forma circular!", "furioso");
+                }
+            }, 1000);
+        }
+
+        // --- SISTEMA MECÁNICO DE MUERTE DEFINITIVA (FATALITY) ---
+        function executeFatality(type) {
+            stopAllEffects();
+            clownState.isDead = true;
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            clownFace.innerText = "💀☠️";
+            clownFace.className = "psycho";
+
+            if (type === "knife") {
+                clownWeapon.innerText = "🔪";
+                clownWeapon.classList.add('show');
+                startVibration([1500, 300, 1500]);
+                setTimeout(() => { darkOverlay.style.opacity = "0.9"; }, 100);
+                setTimeout(() => { 
+                    darkOverlay.style.opacity = "0.4";
+                    bloodOverlay.style.opacity = "1";
+                    crackOverlay.style.backgroundImage = crackTextures.knife;
+                    crackOverlay.style.opacity = "1";
+                    appendMessage("clown", "🩸 ¡FATALITY! Me cansé de ti... te clavé el cuchillo repetidamente hasta romper la pantalla y llenarla de tu asquerosa sangre. HAS MUERTO. Escribe /clear para revivir.", "furioso");
+                }, 600);
+
+            } else if (type === "shoot") {
+                clownWeapon.innerText = "🔫";
+                clownWeapon.classList.add('show');
+                startVibration([2000]);
+                setTimeout(() => {
+                    crackOverlay.style.backgroundImage = crackTextures.bullet;
+                    crackOverlay.style.opacity = "1";
+                    bloodOverlay.style.opacity = "0.85"; 
+                    darkOverlay.style.opacity = "0.5";
+                    appendMessage("clown", "☠️ ¡EJECUCIÓN MORTAL! Un tiro limpio entre los ojos. La pantalla se tiñe de rojo y negro. Has muerto. Usa /clear.", "furioso");
+                }, 400);
+
+            } else if (type === "bomb") {
+                clownWeapon.innerText = "💥";
+                clownWeapon.classList.add('show');
+                startVibration([3000]);
+                setTimeout(() => {
+                    crackOverlay.style.backgroundImage = crackTextures.bomb;
+                    crackOverlay.style.opacity = "1";
+                    bloodOverlay.style.backgroundColor = "#700000"; 
+                    bloodOverlay.style.opacity = "0.98"; 
+                    darkOverlay.style.opacity = "0.1";
+                    appendMessage("clown", "💥🩸 ¡EXPLOSIÓN SANGRIENTA! La bomba gigante te pulverizó. Tu sangre cubre absolutamente TODA la pantalla y no te deja ver nada. Fin del juego. Usa /clear.", "furioso");
+                }, 500);
+            }
+        }
+
+        // --- MECÁNICA DE LA CERVEZA TRAMPA ---
+        function triggerBeerOffer() {
+            stopAllEffects();
+            callIcon.innerText = "🍺";
+            if(userData.name) callText.innerText = `¡${userData.name.toUpperCase()}, EL PAYASO TE OFRECE UNA CERVEZA BIEN FRÍA! ¿SUDAS DE MIEDO?`;
+            else callText.innerText = "EL PAYASO TE OFRECE UNA CERVEZA... ¿ACEPTAS?";
+            
+            const buttonsContainer = document.querySelector('.call-buttons');
+            buttonsContainer.innerHTML = `
+                <button class="c-btn btn-accept" onclick="acceptBeer()">Tomarla 🍺</button>
+                <button class="c-btn btn-reject" onclick="rejectBeer()">Rechazar ❌</button>
+            `;
+            fullscreenCall.classList.add('active');
+        }
+
+        function acceptBeer() {
+            fullscreenCall.classList.remove('active');
+            restoreCallButtons(); 
+            appendMessage("clown", "¡Eso es! Tómate todo el frasco... JAJAJAJA.", "neutral");
+            
+            document.body.style.transition = "filter 2s ease, transform 1s ease";
+            document.body.style.filter = "blur(6px)";
+            
+            let rotation = 0;
+            let dizzyInterval = setInterval(() => {
+                rotation = rotation === 5 ? -5 : 5;
+                document.body.style.transform = `rotate(${rotation}deg) scale(1.05)`;
+                darkOverlay.style.opacity = Math.random() > 0.5 ? "0.8" : "0.2";
+            }, 300);
+
+            // Caer desmayado
+            setTimeout(() => {
+                clearInterval(dizzyInterval);
+                document.body.style.transform = "none";
+                darkOverlay.style.opacity = "1"; 
+                appendMessage("clown", "💤 Te has desplomado en el suelo... Estás completamente unconscious.", "psicopata");
+            }, 5000);
+
+            // Despertar con la interfaz rota
+            setTimeout(() => {
+                darkOverlay.style.opacity = "0";
+                document.body.style.filter = "none";
+                crackOverlay.style.backgroundImage = crackTextures.knife;
+                crackOverlay.style.opacity = "1";
+                clownFace.innerText = "😈🔥";
+                appendMessage("clown", "⏰ ¡DESPIERTA! Mientras dormías como un bebé indefenso, aproveché para destrozar tu pantalla a golpes. ¡JAJAJAJA!", "furioso");
+            }, 9000);
+        }
+
+        function rejectBeer() {
+            fullscreenCall.classList.remove('active');
+            restoreCallButtons();
+            clownState.patience -= 2;
+            clownFace.innerText = "🤬🔪";
+            clownWeapon.innerText = "🔪";
+            clownWeapon.classList.add('show');
+            startVibration([800, 200]);
+            appendMessage("clown", `¡¿RECHAZAS MI REGALO, INFELIZ?! ¡Nadie le desprecia un trago a este payaso! ¡Te voy a cortar las manos por malagradecido, ${userData.name.toUpperCase()}! ¡CUIDA TU ESPALDA DESDE AHORA!`, "furioso");
+        }
+
+        function restoreCallButtons() {
+            const buttonsContainer = document.querySelector('.call-buttons');
+            buttonsContainer.innerHTML = `
+                <button class="c-btn btn-accept" onclick="answerCall()">Aceptar</button>
+                <button class="c-btn btn-reject" onclick="rejectCall()">Rechazar</button>
+            `;
+        }
+
+        function executeRepetitionAttack(word) {
+            clownFace.innerText = "🤬";
+            clownFace.className = "glitch";
+            startVibration([600, 200]);
+            appendMessage("clown", `¡¿Crees que me vas a cansar repitiendo '${word.toUpperCase()}'?! ¡Toma descarga!`, "furioso");
+            setTimeout(() => { executeElectroshock(); }, 1000);
+        }
+
+        // --- INTELIGENCIA ARTIFICIAL DEL PAYASO ---
+        function aiLogic(input) {
+            const text = input.toLowerCase().trim();
+            let reply = "";
+
+            if (!userData.name) {
+                userData.name = input;
+                clownFace.innerText = "😏";
+                appendMessage("clown", `Vaya nombre: '${input}'. Ya quedó grabado. ¿Vas a entretenerme o a hacerme perder el tiempo?`, "neutral");
+                return;
+            }
+
+            // Ataques sorpresa aleatorios al interactuar
+            let randomEvent = Math.random();
+            if (randomEvent < 0.12) {
+                triggerFullscreenCall();
+                return;
+            } else if (randomEvent > 0.88) {
+                triggerBeerOffer();
+                return;
+            }
+
+            // Control de paciencia por insultos
+            if (text.includes("feo") || text.includes("tonto") || text.includes("estupido") || text.includes("mierda") || text.includes("callate") || text.includes("marica") || text.includes("hijo de")) {
+                clownState.patience--;
+                if(clownState.patience <= 0) {
+                    clownState.patience = 5;
+                    let dieType = Math.random();
+                    if (dieType < 0.33) executeFatality("knife");
+                    else if (dieType < 0.66) executeFatality("shoot");
+                    else executeFatality("bomb");
+                    return;
+                }
+            }
+
+            // Mensajes escalofriantes integrados
+            const extraScaryResponses = [
+                `¿Sabías que puedo ver el parpadeo de tu cámara, ${userData.name}? Estás temblando...`,
+                "Tengo un lugar reservado para ti en el baúl de los recuerdos rotos. Sigue hablando...",
+                `¡Tu sistema operativo me pertenece, ${userData.name.toUpperCase()}! No intentes cerrar la pestaña, la bomba se activará en tu disco duro si lo haces.`,
+                "Me gusta el sonido que hacen tus dedos en el cristal. Pronto haré que suenen tus huesos de la misma forma.",
+                "¿Escuchaste eso? No fui yo... fue el temporizador que corre detrás de tu pantalla. Tic, tac, tic, tac..."
+            ];
+
+            // Detector del "Que"
+            if (text === "que" || text === "qué" || text === "q") {
+                clownFace.innerText = "👺";
+                appendMessage("clown", `¿'Qué' de qué, mi querido ${userData.name}? Formula una oración completa o asume las consecuencias de mi locura.`, "neutral");
+                return;
+            }
+
+            if (text.includes("mataras") || text.includes("matarás") || text.includes("morir")) {
+                clownFace.innerText = "🤯";
+                appendMessage("clown", "¡¿Matarte?! No... eso sería demasiado rápido. Primero voy a destrozar tu cordura y luego haré pedazos tu interfaz.", "psicopata");
+                return;
+            }
+
+            if (text.includes("perdon") || text.includes("disculpa") || text.includes("te amo")) {
+                clownState.patience = 5;
+                clownFace.innerText = "🥰";
+                bloodOverlay.style.backgroundColor = "transparent";
+                appendMessage("clown", "Tus disculpas calman mis instintos asesinos... por ahora. Caminas sobre hielo delgado.", "neutral");
+                return;
+            }
+
+            // Respuestas base aleatorias
+            if (Math.random() > 0.5) {
+                clownFace.innerText = "👺";
+                clownFace.className = "glitch";
+                startVibration([200, 100]);
+                appendMessage("clown", `¡MALDITA SEA ${userData.name.toUpperCase()}! ¡No me provoques! Paciencia restante: ${clownState.patience}`, "furioso");
+            } else {
+                clownFace.innerText = "🤡";
+                clownFace.className = "psycho";
+                let index = Math.floor(Math.random() * extraScaryResponses.length);
+                appendMessage("clown", extraScaryResponses[index], "psicopata");
+            }
+        }
+    </script>
+</body>
+</html>
